@@ -1,0 +1,14 @@
+{
+  "main.css": "/snake/static/css/main.7b87824b.chunk.css",
+  "main.js": "/snake/static/js/main.250a502d.chunk.js",
+  "main.js.map": "/snake/static/js/main.250a502d.chunk.js.map",
+  "static/js/1.3f0be990.chunk.js": "/snake/static/js/1.3f0be990.chunk.js",
+  "static/js/1.3f0be990.chunk.js.map": "/snake/static/js/1.3f0be990.chunk.js.map",
+  "runtime~main.js": "/snake/static/js/runtime~main.da1ecade.js",
+  "runtime~main.js.map": "/snake/static/js/runtime~main.da1ecade.js.map",
+  "static/css/main.7b87824b.chunk.css.map": "/snake/static/css/main.7b87824b.chunk.css.map",
+  "static/media/index.css": "/snake/static/media/Gugi-Regular.deba6882.ttf",
+  "index.html": "/snake/index.html",
+  "precache-manifest.6f74820d235b1c50826fbe90b549aa46.js": "/snake/precache-manifest.6f74820d235b1c50826fbe90b549aa46.js",
+  "service-worker.js": "/snake/service-worker.js"
+}
