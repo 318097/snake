@@ -1,0 +1,26 @@
+:root {
+  --cell-border-color: rgb(37, 37, 37);
+}
+.grid-cell {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  height: 15px;
+  width: 15px;
+  border-left: 0.5px solid var(--cell-border-color);
+  border-bottom: 0.5px solid var(--cell-border-color);
+}
+/* border for every cell in the first row */
+.row-0.grid-cell {
+  border-top: 0.5px solid var(--cell-border-color);
+}
+/* border on the right cell in every row */
+.row.grid-cell:last-child {
+  border-right: 0.5px solid var(--cell-border-color);
+}
+.food {
+  background: rgb(0, 134, 0);
+}
+.snake {
+  background: rgb(255, 175, 25);
+}
