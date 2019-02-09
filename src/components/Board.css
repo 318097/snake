@@ -1,8 +1,9 @@
 .content {
   text-align: center;
+  background: #e3e6e7;
 }
 header {
-  background: lightblue;
+  background: #858dbb;
   padding: 20px;
   display: flex;
   align-items: center;
@@ -20,15 +21,30 @@ h3 .status {
   margin: 0 5px;
   border-radius: 50%;
   cursor: pointer;
+  position: relative;
+  right: 5px;
+  animation: 2s mix infinite;
+}
+.score {
+  padding: 10px;
+  border: 1px solid transparent;
 }
 .in-progress {
-  background: goldenrod;
+  background: #fbcb38;
 }
 .finished {
-  background: tomato;
+  background: #d84339;
+}
+.score.finished {
+  border: 1px solid white;
+  padding: 10px;
+  background: none;
 }
 .not-started {
-  background: grey;
+  background: #fff;
+}
+.paused {
+  background: #f1cbb5;
 }
 .grid-row {
   padding: 0;
@@ -51,4 +67,15 @@ h3 .status {
 }
 .play:hover {
   transform: scale(1.5) rotate(360deg);
+}
+@keyframes mix {
+  0% {
+    transform: scale(0.5);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(0.5);
+  }
 }

@@ -6,7 +6,7 @@ export default class Board extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      status: 0, // 0 - not started, 1 - in progress, 2 - finished,
+      status: 0, // 0 - not started, 1 - in progress, 2 - finished, 3 - paused
       food: {},
       score: 0,
       snake: [],
@@ -16,12 +16,33 @@ export default class Board extends Component {
         n: 20 // no of cells
       }
     };
+    this.handleGameStatus = this.handleGameStatus.bind(this);
     this.startGame = this.startGame.bind(this);
     this.moveSnake = this.moveSnake.bind(this);
     this.setDirection = this.setDirection.bind(this);
   }
   componentDidMount() {
     document.addEventListener('keydown', this.setDirection);
+  }
+  handleGameStatus() {
+    if (this.state.status === 1) {
+      // pause the game
+      clearInterval(this.repaintInterval);
+      this.setState({
+        status: 3
+      });
+    } else if (this.state.status === 3) {
+      // resume the game
+      this.repaintInterval = setInterval(
+        this.moveSnake,
+        this.state.config.refreshRate
+      );
+      this.setState({
+        status: 1
+      });
+    } else {
+      this.startGame();
+    }
   }
   startGame() {
     this.setState({
@@ -109,12 +130,16 @@ export default class Board extends Component {
     });
   }
   setDirection({ which: keycode }) {
+    // start/pause the game with space.
+    if (keycode === 32) this.handleGameStatus();
+
     const oldDirection = this.state.direction;
     let dir;
     if (keycode === 37 && oldDirection !== 'RIGHT') dir = 'LEFT';
     if (keycode === 38 && oldDirection !== 'DOWN') dir = 'UP';
     if (keycode === 39 && oldDirection !== 'LEFT') dir = 'RIGHT';
     if (keycode === 40 && oldDirection !== 'UP') dir = 'DOWN';
+
     this.setState({
       direction: dir ? dir : this.state.direction
     });
@@ -124,11 +149,24 @@ export default class Board extends Component {
     const status = this.state.status;
 
     let statusClass = `status ${
-      status === 0 ? 'not-started' : status === 1 ? 'in-progress' : 'finished'
+      status === 0
+        ? 'not-started'
+        : status === 1
+        ? 'in-progress'
+        : status === 2
+        ? 'finished'
+        : 'paused'
     }`;
     let statusLabel = `${
-      status === 0 ? 'Not Started' : status === 1 ? 'In Progress' : 'Finished'
+      status === 0
+        ? 'Not Started'
+        : status === 1
+        ? 'In Progress'
+        : status === 2
+        ? 'Finished'
+        : 'Paused'
     }`;
+    const scoreClass = `score ${status === 2 ? 'finished' : ''}`;
     const cellIndexes = Array.from(Array(noOfCells).keys());
     const cells = cellIndexes.map(x => {
       return (
@@ -153,15 +191,23 @@ export default class Board extends Component {
       <div className="content">
         <header>
           <h3>
-            Snake <span title={statusLabel} className={statusClass} />
+            S<span style={{ color: 'white' }}>n</span>ake{' '}
+            <span title={statusLabel} className={statusClass} />
           </h3>
-          <div className="score">Score : {this.state.score}</div>
+          <div className={scoreClass}>
+            S<span style={{ color: 'white' }}>c</span>ore:{' '}
+            <span style={{ color: 'white' }}>{this.state.score}</span>
+          </div>
         </header>
         <div className="board">
           <div className="overlay">
             {/* <button onClick={this.startGame}>Start</button> */}
-            <span title="Play" className="play" onClick={this.startGame}>
-              <i className="far fa-play-circle" />
+            <span title="Play" className="play" onClick={this.handleGameStatus}>
+              {status === 1 ? (
+                <i className="far fa-pause-circle" />
+              ) : (
+                <i className="far fa-play-circle" />
+              )}
             </span>
           </div>
           {cells}

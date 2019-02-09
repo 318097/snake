@@ -19,8 +19,8 @@
   border-right: 0.5px solid var(--cell-border-color);
 }
 .food {
-  background: rgb(0, 134, 0);
+  background: #6cca51;
 }
 .snake {
-  background: rgb(255, 175, 25);
+  background: #fbcb38;
 }
