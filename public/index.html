@@ -29,6 +29,19 @@
       crossorigin="anonymous"
     />
     <title>React App</title>
+    <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: 'AIzaSyBOLg_z6oQ_AE4bljR6mKpw0eQY1iMqXbk',
+        authDomain: 'snake-11f28.firebaseapp.com',
+        databaseURL: 'https://snake-11f28.firebaseio.com',
+        projectId: 'snake-11f28',
+        storageBucket: '',
+        messagingSenderId: '225867491526'
+      };
+      firebase.initializeApp(config);
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

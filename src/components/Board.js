@@ -196,7 +196,9 @@ export default class Board extends Component {
           </h3>
           <div className={scoreClass}>
             S<span style={{ color: 'white' }}>c</span>ore:{' '}
-            <span style={{ color: 'white' }}>{this.state.score}</span>
+            <span style={{ color: 'white', fontSize: '130%' }}>
+              {this.state.score}
+            </span>
           </div>
         </header>
         <div className="board">
