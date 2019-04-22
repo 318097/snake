@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 import React, { Component } from 'react';
 import Cell from './Cell';
 import './Board.css';
@@ -13,38 +14,16 @@ export default class Board extends Component {
       direction: 'RIGHT',
       config: {
         refreshRate: 260,
-        n: 20 // no of cells
-      }
+        n: 20, // no of cells
+      },
     };
-    this.handleGameStatus = this.handleGameStatus.bind(this);
-    this.startGame = this.startGame.bind(this);
-    this.moveSnake = this.moveSnake.bind(this);
-    this.setDirection = this.setDirection.bind(this);
   }
+
   componentDidMount() {
     document.addEventListener('keydown', this.setDirection);
   }
-  handleGameStatus() {
-    if (this.state.status === 1) {
-      // pause the game
-      clearInterval(this.repaintInterval);
-      this.setState({
-        status: 3
-      });
-    } else if (this.state.status === 3) {
-      // resume the game
-      this.repaintInterval = setInterval(
-        this.moveSnake,
-        this.state.config.refreshRate
-      );
-      this.setState({
-        status: 1
-      });
-    } else {
-      this.startGame();
-    }
-  }
-  startGame() {
+
+  startGame = () => {
     this.setState({
       status: 1,
       score: 0,
@@ -58,14 +37,16 @@ export default class Board extends Component {
     );
     // this.el.focus(); // For the keydown event to work
   }
-  createFood() {
+
+  createFood = () => {
     const x = Math.floor((Math.random() * 100) % this.state.config.n);
     const y = Math.round((Math.random() * 100) % this.state.config.n);
     this.setState({
       food: { x, y }
     });
   }
-  checkCollision(head) {
+
+  checkCollision = (head) => {
     /* Check for wall & self collision */
     /* Wall collision */
     let hasCollision = false;
@@ -94,7 +75,8 @@ export default class Board extends Component {
     }
     return false;
   }
-  moveSnake() {
+
+  moveSnake = () => {
     const dir = this.state.direction;
     const food = this.state.food;
     let snake = this.state.snake.slice();
@@ -129,7 +111,8 @@ export default class Board extends Component {
       snake: snake
     });
   }
-  setDirection({ which: keycode }) {
+
+  setDirection = ({ which: keycode }) => {
     // start/pause the game with space.
     if (keycode === 32) this.handleGameStatus();
 
@@ -144,6 +127,28 @@ export default class Board extends Component {
       direction: dir ? dir : this.state.direction
     });
   }
+
+  handleGameStatus = () => {
+    if (this.state.status === 1) {
+      // pause the game
+      clearInterval(this.repaintInterval);
+      this.setState({
+        status: 3
+      });
+    } else if (this.state.status === 3) {
+      // resume the game
+      this.repaintInterval = setInterval(
+        this.moveSnake,
+        this.state.config.refreshRate
+      );
+      this.setState({
+        status: 1
+      });
+    } else {
+      this.startGame();
+    }
+  }
+
   render() {
     const noOfCells = this.state.config.n;
     const status = this.state.status;
@@ -152,20 +157,20 @@ export default class Board extends Component {
       status === 0
         ? 'not-started'
         : status === 1
-        ? 'in-progress'
-        : status === 2
-        ? 'finished'
-        : 'paused'
-    }`;
+          ? 'in-progress'
+          : status === 2
+            ? 'finished'
+            : 'paused'
+      }`;
     let statusLabel = `${
       status === 0
         ? 'Not Started'
         : status === 1
-        ? 'In Progress'
-        : status === 2
-        ? 'Finished'
-        : 'Paused'
-    }`;
+          ? 'In Progress'
+          : status === 2
+            ? 'Finished'
+            : 'Paused'
+      }`;
     const scoreClass = `score ${status === 2 ? 'finished' : ''}`;
     const cellIndexes = Array.from(Array(noOfCells).keys());
     const cells = cellIndexes.map(x => {
@@ -208,8 +213,8 @@ export default class Board extends Component {
               {status === 1 ? (
                 <i className="far fa-pause-circle" />
               ) : (
-                <i className="far fa-play-circle" />
-              )}
+                  <i className="far fa-play-circle" />
+                )}
             </span>
           </div>
           {cells}
