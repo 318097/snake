@@ -1,16 +1,22 @@
 import React from 'react';
 import './Cell.css';
 
-const Cell = props => {
-  const x = props.coord.split('-')[0];
+const Cell = ({ coord, obj }) => {
+  const xCoord = coord.split('-')[0];
+  const cellBackground =
+    obj.snake.present ?
+      'snake' : obj.opponentSnake.present ?
+        'opponent-snake' : obj.food ?
+          'food' : '';
 
-  const styles = `
-        row-${x}
+  let classes = `
+        row-${xCoord}
         row
         grid-cell
-        ${props.hasFood ? 'food' : ''}
-        ${props.hasSnake ? 'snake' : ''}
+        ${cellBackground}
     `;
-  return <div className={styles} />;
+  return <div
+    className={classes} >
+  </div>;
 };
 export default Cell;

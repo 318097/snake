@@ -1,19 +1,29 @@
 /* eslint-disable linebreak-style */
 import React, { Component } from 'react';
+import openSocket from 'socket.io-client';
 import Cell from './Cell';
 import './Board.css';
+import statusCodes from '../constants';
 
+const short = require('short-uuid');
+
+let socket;
 export default class Board extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      status: 0, // 0 - not started, 1 - in progress, 2 - finished, 3 - paused
+      status: statusCodes.NOT_STARTED, // 0 - not started, 1 - in progress, 2 - finished, 3 - paused
       food: {},
+      grid: [],
       score: 0,
       snake: [],
+      message: '',
+      opponentSnake: [],
+      gameMode: 'SINGLE',
+      uid: short.generate(),
       direction: 'RIGHT',
       config: {
-        refreshRate: 260,
+        refreshRate: 300,
         n: 20, // no of cells
       },
     };
@@ -21,33 +31,88 @@ export default class Board extends Component {
 
   componentDidMount() {
     document.addEventListener('keydown', this.setDirection);
+    const grid = Array(this.state.config.n).fill(0).map(() => Array(this.state.config.n).fill(0));
+    this.setState({ grid });
   }
 
-  startGame = () => {
+  componentWillUnmount() {
+    if (this.state.gameMode === 'MULTI') socket.emit('disconnect');
+  }
+
+  setGameMode = () => this.setState({ gameMode: this.state.gameMode === 'SINGLE' ? 'MULTI' : 'SINGLE' });
+
+  setGameStatus = (status) => {
+    switch (status) {
+      case statusCodes.FINISHED:
+      case statusCodes.PAUSED:
+        clearInterval(this.repaintInterval);
+        break;
+      case statusCodes.IN_PROGRESS:
+        this.repaintInterval = setInterval(
+          this.moveSnake,
+          this.state.config.refreshRate
+        );
+        break;
+      default:
+        break;
+    }
+    this.setState({ status });
+  }
+
+  toggleGameState = () => {
+    const { status: prevStatus } = this.state;
+    if (prevStatus === statusCodes.IN_PROGRESS) this.setGameStatus(statusCodes.PAUSED);
+    else if (prevStatus === statusCodes.PAUSED) this.setGameStatus(statusCodes.IN_PROGRESS);
+    else {
+      if (this.state.gameMode === 'MULTI') {
+        socket = openSocket.connect('http://localhost:3001');
+        console.log('uid: ', this.state.uid);
+        socket.emit('join-game', this.state.uid);
+        socket.on('start-game', () => {
+          console.log('Game started.');
+          this.startGame();
+        });
+        socket.on('game-updates', (updates) => {
+          if (updates.type === 'FOOD') {
+            console.log('New food:', updates.food);
+            this.setState({ food: updates.data });
+          } else if (updates.type === 'POSITION') {
+            if (this.state.uid !== updates.playerId) this.setState({ opponentSnake: updates.data });
+          }
+        });
+        socket.on('game-over', () => {
+          console.log('GAME OVER !!!');
+          this.setGameStatus(statusCodes.NOT_STARTED);
+          socket.emit('disconnect');
+        });
+      } else {
+        this.startGame();
+      }
+    }
+  }
+
+  setDirection = ({ which: keycode }) => {
+    if (keycode === 32) this.toggleGameState(); // start/pause the game with space.
+
+    const { direction: oldDirection } = this.state;
+    let newDirection;
+    if (keycode === 37 && oldDirection !== 'RIGHT') newDirection = 'LEFT';
+    if (keycode === 38 && oldDirection !== 'DOWN') newDirection = 'UP';
+    if (keycode === 39 && oldDirection !== 'LEFT') newDirection = 'RIGHT';
+    if (keycode === 40 && oldDirection !== 'UP') newDirection = 'DOWN';
+
     this.setState({
-      status: 1,
-      score: 0,
-      direction: 'RIGHT',
-      snake: [{ x: 2, y: 5 }, { x: 2, y: 4 }, { x: 2, y: 3 }]
+      direction: newDirection ? newDirection : this.state.direction
     });
-    this.createFood();
-    this.repaintInterval = setInterval(
-      this.moveSnake,
-      this.state.config.refreshRate
-    );
-    // this.el.focus(); // For the keydown event to work
   }
 
   createFood = () => {
     const x = Math.floor((Math.random() * 100) % this.state.config.n);
     const y = Math.round((Math.random() * 100) % this.state.config.n);
-    this.setState({
-      food: { x, y }
-    });
+    return { x, y };
   }
 
   checkCollision = (head) => {
-    /* Check for wall & self collision */
     /* Wall collision */
     let hasCollision = false;
     if (
@@ -66,132 +131,104 @@ export default class Board extends Component {
         break;
       }
     }
-    if (hasCollision) {
-      this.setState({
-        status: 2
-      });
-      clearInterval(this.repaintInterval);
-      return true;
-    }
-    return false;
+    return hasCollision;
   }
 
   moveSnake = () => {
-    const dir = this.state.direction;
-    const food = this.state.food;
     let snake = this.state.snake.slice();
+    let { food, direction, score, gameMode, uid } = this.state;
 
     let head = { ...snake[0] };
 
-    /* If there is a collision, then break out */
-    if (this.checkCollision(head)) return;
-
+    if (this.checkCollision(head)) {
+      this.setGameStatus(statusCodes.FINISHED);
+      if (gameMode === 'MULTI') {
+        socket.emit('player-dead', uid);
+      }
+      return;
+    }
     // Check if food is eaten.
     if (head.x === food.x && head.y === food.y) {
-      this.setState({
-        score: this.state.score + 1
-      });
-      this.createFood();
-      /* last item need not be popped. that increases the length  */
+      score++;
+      if (gameMode === 'SINGLE') food = this.createFood();
+      else {
+        socket.emit('game-status', { data: food, type: 'FOOD' });
+        food = {};
+      }
     } else {
-      /* if the food is not eaten, then its popped */
-      snake.pop();
+      snake.pop(); /* if the food is not eaten, then its popped */
     }
-    if (dir === 'RIGHT') {
+    if (direction === 'RIGHT') {
       head.y++;
-    } else if (dir === 'LEFT') {
+    } else if (direction === 'LEFT') {
       head.y--;
-    } else if (dir === 'UP') {
+    } else if (direction === 'UP') {
       head.x--;
-    } else if (dir === 'DOWN') {
+    } else if (direction === 'DOWN') {
       head.x++;
     }
     snake.unshift(head);
     this.setState({
-      snake: snake
+      snake,
+      food,
+      score,
     });
-  }
-
-  setDirection = ({ which: keycode }) => {
-    // start/pause the game with space.
-    if (keycode === 32) this.handleGameStatus();
-
-    const oldDirection = this.state.direction;
-    let dir;
-    if (keycode === 37 && oldDirection !== 'RIGHT') dir = 'LEFT';
-    if (keycode === 38 && oldDirection !== 'DOWN') dir = 'UP';
-    if (keycode === 39 && oldDirection !== 'LEFT') dir = 'RIGHT';
-    if (keycode === 40 && oldDirection !== 'UP') dir = 'DOWN';
-
-    this.setState({
-      direction: dir ? dir : this.state.direction
-    });
-  }
-
-  handleGameStatus = () => {
-    if (this.state.status === 1) {
-      // pause the game
-      clearInterval(this.repaintInterval);
-      this.setState({
-        status: 3
-      });
-    } else if (this.state.status === 3) {
-      // resume the game
-      this.repaintInterval = setInterval(
-        this.moveSnake,
-        this.state.config.refreshRate
-      );
-      this.setState({
-        status: 1
-      });
-    } else {
-      this.startGame();
+    if (this.state.gameMode === 'MULTI') {
+      socket.emit('game-status', { data: snake, playerId: this.state.uid, type: 'POSITION' });
     }
   }
 
-  render() {
-    const noOfCells = this.state.config.n;
-    const status = this.state.status;
+  startGame = () => {
+    this.setState({
+      status: statusCodes.IN_PROGRESS,
+      score: 0,
+      direction: 'RIGHT',
+      snake: [{ x: 2, y: 5 }, { x: 2, y: 4 }],
+      food: this.state.gameMode === 'SINGLE' ? this.createFood() : socket.emit('game-status', { type: 'FOOD' }),
+    });
+    this.repaintInterval = setInterval(
+      this.moveSnake,
+      this.state.config.refreshRate
+    );
+  }
 
-    let statusClass = `status ${
-      status === 0
-        ? 'not-started'
-        : status === 1
-          ? 'in-progress'
-          : status === 2
-            ? 'finished'
-            : 'paused'
-      }`;
-    let statusLabel = `${
-      status === 0
-        ? 'Not Started'
-        : status === 1
-          ? 'In Progress'
-          : status === 2
-            ? 'Finished'
-            : 'Paused'
-      }`;
-    const scoreClass = `score ${status === 2 ? 'finished' : ''}`;
-    const cellIndexes = Array.from(Array(noOfCells).keys());
-    const cells = cellIndexes.map(x => {
+  render() {
+    const { grid, status } = this.state;
+
+    const statusLabel = `${status}`;
+    const statusClass = `status ` + statusLabel;
+    const scoreClass = `score ${status === statusCodes.FINISHED ? 'finished' : ''}`;
+
+    const cells = grid.map((row, rowIndex) => {
       return (
-        <div key={'row-' + x} className="grid-row">
-          {cellIndexes.map(y => {
-            const hasFood = x === this.state.food.x && y === this.state.food.y;
-            let hasSnake = this.state.snake.filter(s => s.x === x && s.y === y);
-            hasSnake = !!(hasSnake.length && hasSnake[0]);
+        <div key={'row-' + rowIndex} className="grid-row">
+          {row.map((col, colIndex) => {
+            const obj = {
+              snake: { color: this.state.color, present: false },
+              opponentSnake: { color: this.state.opponentColor, present: false }
+            };
+
+            obj.food = rowIndex === this.state.food.x && colIndex === this.state.food.y;
+            const hasSnake = this.state.snake.filter(cell => cell.x === rowIndex && cell.y === colIndex);
+            obj.snake.present = !!(hasSnake.length && hasSnake[0]);
+
+            if (this.state.gameMode === 'MULTI') {
+              let hasOpponentSnake = this.state.opponentSnake.filter(cell => cell.x === rowIndex && cell.y === colIndex);
+              obj.opponentSnake.present = !!(hasOpponentSnake.length && hasOpponentSnake[0]);
+            }
+
             return (
               <Cell
-                coord={x + '-' + y}
-                key={x + '' + y}
-                hasFood={hasFood}
-                hasSnake={hasSnake}
+                coord={rowIndex + '-' + colIndex}
+                key={'row' + rowIndex + '-col' + colIndex}
+                obj={obj}
               />
             );
           })}
         </div>
       );
     });
+
     return (
       <div className="content">
         <header>
@@ -208,13 +245,20 @@ export default class Board extends Component {
         </header>
         <div className="board">
           <div className="overlay">
-            {/* <button onClick={this.startGame}>Start</button> */}
-            <span title="Play" className="play" onClick={this.handleGameStatus}>
-              {status === 1 ? (
-                <i className="far fa-pause-circle" />
-              ) : (
-                  <i className="far fa-play-circle" />
-                )}
+            <span style={{ width: '20px', height: '20px', background: this.state.color, display: 'block' }}></span>
+            <span title={this.state.gameMode + ' PLAYER'} className="game-mode icon" onClick={() => this.setGameMode()}>
+              {
+                this.state.gameMode === 'SINGLE' ?
+                  (<i className="fas fa-dice-one"></i>) :
+                  (<i className="fas fa-dice-two"></i>)
+              }
+            </span>
+            <span title="Play" className="play icon" onClick={this.toggleGameState}>
+              {
+                status === statusCodes.IN_PROGRESS ?
+                  (<i className="far fa-pause-circle" />) :
+                  (<i className="far fa-play-circle" />)
+              }
             </span>
           </div>
           {cells}

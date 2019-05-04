@@ -24,3 +24,6 @@
 .snake {
   background: #fbcb38;
 }
+.opponent-snake{
+  background: tomato;
+}

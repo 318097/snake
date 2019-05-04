@@ -55,18 +55,23 @@ h3 .status {
   margin: 45px 0;
   display: inline-block;
 }
-.play {
+.icon {
   position: absolute;
   right: 0;
-  bottom: 0;
   font-size: 25px;
   margin: 13px;
   color: rgb(24, 24, 24);
   cursor: pointer;
   transition: 0.7s;
 }
-.play:hover {
+.icon:hover {
   transform: scale(1.5) rotate(360deg);
+}
+.game-mode{
+  bottom: 32px;
+}
+.play{
+  bottom: 0;
 }
 @keyframes mix {
   0% {
