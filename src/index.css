@@ -14,7 +14,8 @@ body {
   font-weight: bold;
 }
 h3,
-.score {
+.score,
+.block .text {
   font-family: myFont;
 }
 code {

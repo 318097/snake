@@ -2,7 +2,7 @@
 import React, { Component } from 'react';
 import openSocket from 'socket.io-client';
 import Cell from './Cell';
-import './Board.css';
+import './Board.scss';
 import statusCodes from '../constants';
 
 const short = require('short-uuid');
@@ -17,7 +17,7 @@ export default class Board extends Component {
       grid: [],
       score: 0,
       snake: [],
-      message: '',
+      message: 'Hit the />lay button',
       opponentSnake: [],
       gameMode: 'SINGLE',
       uid: short.generate(),
@@ -42,12 +42,18 @@ export default class Board extends Component {
   setGameMode = () => this.setState({ gameMode: this.state.gameMode === 'SINGLE' ? 'MULTI' : 'SINGLE' });
 
   setGameStatus = (status) => {
+    let message;
     switch (status) {
       case statusCodes.FINISHED:
+        message = 'Game Over!';
+        clearInterval(this.repaintInterval);
+        break;
       case statusCodes.PAUSED:
+        message = 'Paused';
         clearInterval(this.repaintInterval);
         break;
       case statusCodes.IN_PROGRESS:
+        message = 'In progress...'
         this.repaintInterval = setInterval(
           this.moveSnake,
           this.state.config.refreshRate
@@ -56,7 +62,7 @@ export default class Board extends Component {
       default:
         break;
     }
-    this.setState({ status });
+    this.setState({ status, message });
   }
 
   toggleGameState = () => {
@@ -67,14 +73,16 @@ export default class Board extends Component {
       if (this.state.gameMode === 'MULTI') {
         socket = openSocket.connect('http://localhost:3001');
         console.log('uid: ', this.state.uid);
+        this.setState({ message: 'Waiting for opponent...' });
         socket.emit('join-game', this.state.uid);
         socket.on('start-game', () => {
           console.log('Game started.');
-          this.startGame();
+          this.setState({ message: 'Starting game...' });
+          setTimeout(() => this.startGame(), 1000);
         });
         socket.on('game-updates', (updates) => {
           if (updates.type === 'FOOD') {
-            console.log('New food:', updates.food);
+            // console.log('New food:', updates.food);
             this.setState({ food: updates.data });
           } else if (updates.type === 'POSITION') {
             if (this.state.uid !== updates.playerId) this.setState({ opponentSnake: updates.data });
@@ -82,6 +90,7 @@ export default class Board extends Component {
         });
         socket.on('game-over', () => {
           console.log('GAME OVER !!!');
+          this.setState({ message: 'Game Over!' });
           this.setGameStatus(statusCodes.NOT_STARTED);
           socket.emit('disconnect');
         });
@@ -97,12 +106,12 @@ export default class Board extends Component {
     const { direction: oldDirection } = this.state;
     let newDirection;
     if (keycode === 37 && oldDirection !== 'RIGHT') newDirection = 'LEFT';
-    if (keycode === 38 && oldDirection !== 'DOWN') newDirection = 'UP';
-    if (keycode === 39 && oldDirection !== 'LEFT') newDirection = 'RIGHT';
-    if (keycode === 40 && oldDirection !== 'UP') newDirection = 'DOWN';
+    else if (keycode === 38 && oldDirection !== 'DOWN') newDirection = 'UP';
+    else if (keycode === 39 && oldDirection !== 'LEFT') newDirection = 'RIGHT';
+    else if (keycode === 40 && oldDirection !== 'UP') newDirection = 'DOWN';
 
     this.setState({
-      direction: newDirection ? newDirection : this.state.direction
+      direction: newDirection ? newDirection : oldDirection
     });
   }
 
@@ -182,6 +191,7 @@ export default class Board extends Component {
     this.setState({
       status: statusCodes.IN_PROGRESS,
       score: 0,
+      message: 'In progress...',
       direction: 'RIGHT',
       snake: [{ x: 2, y: 5 }, { x: 2, y: 4 }],
       food: this.state.gameMode === 'SINGLE' ? this.createFood() : socket.emit('game-status', { type: 'FOOD' }),
@@ -193,27 +203,32 @@ export default class Board extends Component {
   }
 
   render() {
-    const { grid, status } = this.state;
+    const { grid, status, food, snake, gameMode, opponentSnake, score, message } = this.state;
 
     const statusLabel = `${status}`;
     const statusClass = `status ` + statusLabel;
     const scoreClass = `score ${status === statusCodes.FINISHED ? 'finished' : ''}`;
 
+    const scoreCard = {
+      player1: { name: 'You', score, color: 'green' },
+      player2: { name: 'Opponent', score: 0, color: 'red' }
+    };
+
     const cells = grid.map((row, rowIndex) => {
       return (
         <div key={'row-' + rowIndex} className="grid-row">
-          {row.map((col, colIndex) => {
+          {row.map((_, colIndex) => {
             const obj = {
-              snake: { color: this.state.color, present: false },
-              opponentSnake: { color: this.state.opponentColor, present: false }
+              snake: { present: false },
+              opponentSnake: { present: false }
             };
 
-            obj.food = rowIndex === this.state.food.x && colIndex === this.state.food.y;
-            const hasSnake = this.state.snake.filter(cell => cell.x === rowIndex && cell.y === colIndex);
+            obj.food = rowIndex === food.x && colIndex === food.y;
+            const hasSnake = snake.filter(cell => cell.x === rowIndex && cell.y === colIndex);
             obj.snake.present = !!(hasSnake.length && hasSnake[0]);
 
-            if (this.state.gameMode === 'MULTI') {
-              let hasOpponentSnake = this.state.opponentSnake.filter(cell => cell.x === rowIndex && cell.y === colIndex);
+            if (gameMode === 'MULTI') {
+              let hasOpponentSnake = opponentSnake.filter(cell => cell.x === rowIndex && cell.y === colIndex);
               obj.opponentSnake.present = !!(hasOpponentSnake.length && hasOpponentSnake[0]);
             }
 
@@ -238,17 +253,20 @@ export default class Board extends Component {
           </h3>
           <div className={scoreClass}>
             S<span style={{ color: 'white' }}>c</span>ore:{' '}
-            <span style={{ color: 'white', fontSize: '130%' }}>
-              {this.state.score}
+            <span style={{ color: 'white', fontSize: '135%' }}>
+              {score}
             </span>
           </div>
         </header>
-        <div className="board">
-          <div className="overlay">
-            <span style={{ width: '20px', height: '20px', background: this.state.color, display: 'block' }}></span>
-            <span title={this.state.gameMode + ' PLAYER'} className="game-mode icon" onClick={() => this.setGameMode()}>
+        <section>
+          <div className="board">
+            {cells}
+          </div>
+          <div className="sidebar">
+            <Card mode={gameMode} scoreCard={scoreCard} message={message} />
+            <span title={gameMode + ' PLAYER'} className="game-mode icon" onClick={() => this.setGameMode()}>
               {
-                this.state.gameMode === 'SINGLE' ?
+                gameMode === 'SINGLE' ?
                   (<i className="fas fa-dice-one"></i>) :
                   (<i className="fas fa-dice-two"></i>)
               }
@@ -261,9 +279,41 @@ export default class Board extends Component {
               }
             </span>
           </div>
-          {cells}
-        </div>
+        </section>
       </div>
     );
   }
 }
+
+const Card = ({ mode, scoreCard, message }) => {
+  return (
+    <React.Fragment>
+      <div className="block">
+        <div className="hint">Mode:</div>
+        <div className="text">{mode === 'SINGLE' ? 'Single Player' : 'Multi Player'}</div>
+      </div>
+
+      <div className="block">
+        <div className="hint">Message:</div>
+        <div className="text">{message}</div>
+      </div>
+
+      <div className="block">
+        <div className="hint">Scorecard</div>
+        <div className="text">
+          <span>
+            {scoreCard.player1.name ? scoreCard.player1.name : 'Player 1'}
+          </span>
+          <span style={{ fontSize: '120%' }}>{': ' + scoreCard.player1.score}</span>
+        </div>
+
+        <div className="text">
+          <span>
+            {scoreCard.player2.name ? scoreCard.player2.name : 'Player 2'}
+            <span style={{ fontSize: '120%' }}>{': ' + scoreCard.player2.score}</span>
+          </span>
+        </div>
+      </div>
+    </React.Fragment>
+  );
+};
