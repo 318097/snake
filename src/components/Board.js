@@ -20,6 +20,7 @@ export default class Board extends Component {
       snake: [],
       message: 'Hit the play button',
       opponentSnake: [],
+      opponentScore: 0,
       gameMode: 'SINGLE',
       uid: short.generate(),
       direction: 'RIGHT',
@@ -89,18 +90,17 @@ export default class Board extends Component {
     else {
       if (this.state.gameMode === 'MULTI') {
         socket = openSocket.connect(url);
-        console.log('uid: ', this.state.uid);
         this.setState({ message: 'Waiting for opponent...' });
         socket.emit('join-game', this.state.uid);
         socket.on('start-game', () => {
-          console.log('Game started.');
           this.setState({ message: 'Starting game...' });
           setTimeout(() => this.startGame(), 1000);
         });
         socket.on('game-updates', (updates) => {
           if (updates.type === 'FOOD') {
-            // console.log('New food:', updates.food);
             this.setState({ food: updates.data });
+          } else if (updates.type === 'SCORE') {
+            this.setState({ opponentScore: updates.data });
           } else if (updates.type === 'POSITION') {
             if (this.state.uid !== updates.playerId) this.setState({ opponentSnake: updates.data });
           }
@@ -179,6 +179,7 @@ export default class Board extends Component {
       if (gameMode === 'SINGLE') food = this.createFood();
       else {
         socket.emit('game-status', { data: food, type: 'FOOD' });
+        socket.emit('game-status', { data: score, type: 'SCORE' });
         food = {};
       }
     } else {
@@ -220,7 +221,7 @@ export default class Board extends Component {
   }
 
   render() {
-    const { grid, status, food, snake, gameMode, opponentSnake, score, message } = this.state;
+    const { grid, status, gameMode, snake, score, opponentSnake, opponentScore, food, message } = this.state;
 
     const statusLabel = `${status}`;
     const statusClass = `status ` + statusLabel;
@@ -228,7 +229,7 @@ export default class Board extends Component {
 
     const scoreCard = {
       player1: { name: 'You', score, color: 'green' },
-      player2: { name: 'Opponent', score: 0, color: 'red' }
+      player2: { name: 'Opponent', score: opponentScore, color: 'red' }
     };
 
     const cells = grid.map((row, rowIndex) => {
@@ -283,13 +284,16 @@ export default class Board extends Component {
             <Card mode={gameMode} scoreCard={scoreCard} message={message} />
           </div>
 
-          <span title={gameMode + ' PLAYER'} className="game-mode icon" onClick={() => this.setGameMode()}>
-            {
-              gameMode === 'SINGLE' ?
-                (<i className="fas fa-dice-one"></i>) :
-                (<i className="fas fa-dice-two"></i>)
-            }
-          </span>
+          {(status === statusCodes.NOT_STARTED || status === statusCodes.FINISHED)
+            && (
+              <span title={gameMode + ' PLAYER'} className="game-mode icon" onClick={() => this.setGameMode()}>
+                {
+                  gameMode === 'SINGLE' ?
+                    (<i className="fas fa-dice-one"></i>) :
+                    (<i className="fas fa-dice-two"></i>)
+                }
+              </span>
+            )}
 
           <span title="Play" className="play icon" onClick={this.toggleGameState}>
             {
@@ -317,22 +321,24 @@ const Card = ({ mode, scoreCard, message }) => {
         <div className="text">{message}</div>
       </div>
 
-      <div className="block">
-        <div className="hint">Scorecard</div>
-        <div className="text">
-          <span>
-            {scoreCard.player1.name ? scoreCard.player1.name : 'Player 1'}
-          </span>
-          <span style={{ fontSize: '120%' }}>{': ' + scoreCard.player1.score}</span>
-        </div>
+      {mode === 'MULTI' && (
+        <div className="block">
+          <div className="hint">Scorecard</div>
+          <div className="text">
+            <span>
+              {scoreCard.player1.name ? scoreCard.player1.name : 'Player 1'}
+            </span>
+            <span style={{ fontSize: '120%' }}>{': ' + scoreCard.player1.score}</span>
+          </div>
 
-        <div className="text">
-          <span>
-            {scoreCard.player2.name ? scoreCard.player2.name : 'Player 2'}
-            <span style={{ fontSize: '120%' }}>{': ' + scoreCard.player2.score}</span>
-          </span>
+          <div className="text">
+            <span>
+              {scoreCard.player2.name ? scoreCard.player2.name : 'Player 2'}
+              <span style={{ fontSize: '120%' }}>{': ' + scoreCard.player2.score}</span>
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </React.Fragment>
   );
 };
