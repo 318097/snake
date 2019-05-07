@@ -42,14 +42,28 @@ export default class Board extends Component {
 
   setGameMode = () => this.setState({ gameMode: this.state.gameMode === 'SINGLE' ? 'MULTI' : 'SINGLE' });
 
+  saveGameState = () => {
+    const gameResults = {
+      playerId: this.state.uid,
+      score: this.state.score,
+      mode: this.state.gameMode
+    }
+    fetch(`${this.state.url}/api/snake/game-results`, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(gameResults)
+    }).then(result => console.log('Updated Successfully'));
+  }
+
   setGameStatus = (status) => {
-    const { url } = this.state;
     let message;
     switch (status) {
       case statusCodes.FINISHED:
         message = 'Game Over!';
-
         clearInterval(this.repaintInterval);
+        this.saveGameState();
         break;
       case statusCodes.PAUSED:
         message = 'Paused';
@@ -92,7 +106,7 @@ export default class Board extends Component {
           }
         });
         socket.on('game-over', () => {
-          console.log('GAME OVER !!!');
+          this.saveGameState();
           this.setState({ message: 'Game Over!' });
           this.setGameStatus(statusCodes.NOT_STARTED);
           socket.emit('disconnect');
