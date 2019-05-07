@@ -12,12 +12,13 @@ export default class Board extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      url: 'http://localhost:3001',
       status: statusCodes.NOT_STARTED, // 0 - not started, 1 - in progress, 2 - finished, 3 - paused
       food: {},
       grid: [],
       score: 0,
       snake: [],
-      message: 'Hit the />lay button',
+      message: 'Hit the play button',
       opponentSnake: [],
       gameMode: 'SINGLE',
       uid: short.generate(),
@@ -42,10 +43,12 @@ export default class Board extends Component {
   setGameMode = () => this.setState({ gameMode: this.state.gameMode === 'SINGLE' ? 'MULTI' : 'SINGLE' });
 
   setGameStatus = (status) => {
+    const { url } = this.state;
     let message;
     switch (status) {
       case statusCodes.FINISHED:
         message = 'Game Over!';
+
         clearInterval(this.repaintInterval);
         break;
       case statusCodes.PAUSED:
@@ -66,12 +69,12 @@ export default class Board extends Component {
   }
 
   toggleGameState = () => {
-    const { status: prevStatus } = this.state;
+    const { status: prevStatus, url } = this.state;
     if (prevStatus === statusCodes.IN_PROGRESS) this.setGameStatus(statusCodes.PAUSED);
     else if (prevStatus === statusCodes.PAUSED) this.setGameStatus(statusCodes.IN_PROGRESS);
     else {
       if (this.state.gameMode === 'MULTI') {
-        socket = openSocket.connect('http://localhost:3001');
+        socket = openSocket.connect(url);
         console.log('uid: ', this.state.uid);
         this.setState({ message: 'Waiting for opponent...' });
         socket.emit('join-game', this.state.uid);
@@ -101,7 +104,7 @@ export default class Board extends Component {
   }
 
   setDirection = ({ which: keycode }) => {
-    if (keycode === 32) this.toggleGameState(); // start/pause the game with space.
+    if (keycode === 32 && this.state.gameMode === 'SINGLE') this.toggleGameState(); // start/pause the game with space.
 
     const { direction: oldDirection } = this.state;
     let newDirection;
@@ -264,21 +267,23 @@ export default class Board extends Component {
           </div>
           <div className="sidebar">
             <Card mode={gameMode} scoreCard={scoreCard} message={message} />
-            <span title={gameMode + ' PLAYER'} className="game-mode icon" onClick={() => this.setGameMode()}>
-              {
-                gameMode === 'SINGLE' ?
-                  (<i className="fas fa-dice-one"></i>) :
-                  (<i className="fas fa-dice-two"></i>)
-              }
-            </span>
-            <span title="Play" className="play icon" onClick={this.toggleGameState}>
-              {
-                status === statusCodes.IN_PROGRESS ?
-                  (<i className="far fa-pause-circle" />) :
-                  (<i className="far fa-play-circle" />)
-              }
-            </span>
           </div>
+
+          <span title={gameMode + ' PLAYER'} className="game-mode icon" onClick={() => this.setGameMode()}>
+            {
+              gameMode === 'SINGLE' ?
+                (<i className="fas fa-dice-one"></i>) :
+                (<i className="fas fa-dice-two"></i>)
+            }
+          </span>
+
+          <span title="Play" className="play icon" onClick={this.toggleGameState}>
+            {
+              status === statusCodes.IN_PROGRESS ?
+                (<i className="far fa-pause-circle" />) :
+                (<i className="far fa-play-circle" />)
+            }
+          </span>
         </section>
       </div>
     );
