@@ -1,14 +1,15 @@
 {
-  "main.css": "/snake/static/css/main.deae7053.chunk.css",
-  "main.js": "/snake/static/js/main.7e8e4d4b.chunk.js",
-  "main.js.map": "/snake/static/js/main.7e8e4d4b.chunk.js.map",
-  "static/js/1.3f0be990.chunk.js": "/snake/static/js/1.3f0be990.chunk.js",
-  "static/js/1.3f0be990.chunk.js.map": "/snake/static/js/1.3f0be990.chunk.js.map",
+  "main.css": "/snake/static/css/main.fe7dfaab.chunk.css",
+  "main.js": "/snake/static/js/main.659d3a5a.chunk.js",
+  "main.js.map": "/snake/static/js/main.659d3a5a.chunk.js.map",
+  "static/js/1.8e981a0e.chunk.js": "/snake/static/js/1.8e981a0e.chunk.js",
+  "static/js/1.8e981a0e.chunk.js.map": "/snake/static/js/1.8e981a0e.chunk.js.map",
   "runtime~main.js": "/snake/static/js/runtime~main.da1ecade.js",
   "runtime~main.js.map": "/snake/static/js/runtime~main.da1ecade.js.map",
-  "static/css/main.deae7053.chunk.css.map": "/snake/static/css/main.deae7053.chunk.css.map",
+  "static/css/main.fe7dfaab.chunk.css.map": "/snake/static/css/main.fe7dfaab.chunk.css.map",
   "static/media/index.css": "/snake/static/media/Gugi-Regular.deba6882.ttf",
+  "static/media/Board.scss": "/snake/static/media/dust_scratches.608ab5fe.png",
   "index.html": "/snake/index.html",
-  "precache-manifest.2c467f563834fb7480eb1a4a98d7f977.js": "/snake/precache-manifest.2c467f563834fb7480eb1a4a98d7f977.js",
+  "precache-manifest.72cbf7a99e7405d2d0bbc87c783071bb.js": "/snake/precache-manifest.72cbf7a99e7405d2d0bbc87c783071bb.js",
   "service-worker.js": "/snake/service-worker.js"
 }
