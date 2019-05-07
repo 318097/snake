@@ -1,7 +1,7 @@
 {
   "main.css": "/snake/static/css/main.fe7dfaab.chunk.css",
-  "main.js": "/snake/static/js/main.9906ca89.chunk.js",
-  "main.js.map": "/snake/static/js/main.9906ca89.chunk.js.map",
+  "main.js": "/snake/static/js/main.65f543f6.chunk.js",
+  "main.js.map": "/snake/static/js/main.65f543f6.chunk.js.map",
   "static/js/1.8e981a0e.chunk.js": "/snake/static/js/1.8e981a0e.chunk.js",
   "static/js/1.8e981a0e.chunk.js.map": "/snake/static/js/1.8e981a0e.chunk.js.map",
   "runtime~main.js": "/snake/static/js/runtime~main.da1ecade.js",
@@ -10,6 +10,6 @@
   "static/media/index.css": "/snake/static/media/Gugi-Regular.deba6882.ttf",
   "static/media/Board.scss": "/snake/static/media/dust_scratches.608ab5fe.png",
   "index.html": "/snake/index.html",
-  "precache-manifest.a3d19482928fcbb9823210f04532ae77.js": "/snake/precache-manifest.a3d19482928fcbb9823210f04532ae77.js",
+  "precache-manifest.3dcbf161311084cb6e788486fea761b8.js": "/snake/precache-manifest.3dcbf161311084cb6e788486fea761b8.js",
   "service-worker.js": "/snake/service-worker.js"
 }
