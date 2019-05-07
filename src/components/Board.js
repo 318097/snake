@@ -13,7 +13,8 @@ export default class Board extends Component {
     super(props);
     this.state = {
       url: 'http://localhost:3001',
-      status: statusCodes.NOT_STARTED, // 0 - not started, 1 - in progress, 2 - finished, 3 - paused
+      // url: 'https://bubblegum-server.herokuapp.com/',
+      status: statusCodes.NOT_STARTED,
       food: {},
       grid: [],
       score: 0,
@@ -25,7 +26,7 @@ export default class Board extends Component {
       uid: short.generate(),
       direction: 'RIGHT',
       config: {
-        refreshRate: 300,
+        refreshRate: 200,
         n: 20, // no of cells
       },
     };
@@ -64,7 +65,7 @@ export default class Board extends Component {
       case statusCodes.FINISHED:
         message = 'Game Over!';
         clearInterval(this.repaintInterval);
-        this.saveGameState();
+        if (this.state.gameMode === 'SINGLE') this.saveGameState();
         break;
       case statusCodes.PAUSED:
         message = 'Paused';
@@ -77,7 +78,12 @@ export default class Board extends Component {
           this.state.config.refreshRate
         );
         break;
+      case statusCodes.PENDING:
+        message = 'Someone died..';
+        clearInterval(this.repaintInterval);
+        break;
       default:
+        message = 'Hit the play button';
         break;
     }
     this.setState({ status, message });
@@ -99,16 +105,17 @@ export default class Board extends Component {
         socket.on('game-updates', (updates) => {
           if (updates.type === 'FOOD') {
             this.setState({ food: updates.data });
-          } else if (updates.type === 'SCORE') {
+          } else if (updates.type === 'SCORE' && this.state.uid !== updates.playerId) {
             this.setState({ opponentScore: updates.data });
-          } else if (updates.type === 'POSITION') {
-            if (this.state.uid !== updates.playerId) this.setState({ opponentSnake: updates.data });
+          } else if (updates.type === 'POSITION' && this.state.uid !== updates.playerId) {
+            this.setState({ opponentSnake: updates.data });
           }
         });
         socket.on('game-over', () => {
-          this.saveGameState();
+          console.log('Game Over!');
+          // this.saveGameState();
           this.setState({ message: 'Game Over!' });
-          this.setGameStatus(statusCodes.NOT_STARTED);
+          this.setGameStatus(statusCodes.FINISHED);
           socket.emit('disconnect');
         });
       } else {
@@ -167,9 +174,11 @@ export default class Board extends Component {
     let head = { ...snake[0] };
 
     if (this.checkCollision(head)) {
-      this.setGameStatus(statusCodes.FINISHED);
       if (gameMode === 'MULTI') {
         socket.emit('player-dead', uid);
+        this.setGameStatus(statusCodes.PENDING);
+      } else {
+        this.setGameStatus(statusCodes.FINISHED);
       }
       return;
     }
@@ -178,8 +187,8 @@ export default class Board extends Component {
       score++;
       if (gameMode === 'SINGLE') food = this.createFood();
       else {
-        socket.emit('game-status', { data: food, type: 'FOOD' });
-        socket.emit('game-status', { data: score, type: 'SCORE' });
+        socket.emit('game-status', { data: food, playerId: this.state.uid, type: 'FOOD' });
+        socket.emit('game-status', { data: score, playerId: this.state.uid, type: 'SCORE' });
         food = {};
       }
     } else {

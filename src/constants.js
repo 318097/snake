@@ -7,6 +7,7 @@ const statusCodes = {
   DEAD: 'dead',
   ENDED: 'ended',
   DISCONNECTED: 'disconnected',
+  PENDING: 'pending',
 };
 
 export default statusCodes;
